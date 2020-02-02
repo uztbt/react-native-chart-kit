@@ -64,17 +64,14 @@ class AbstractChart extends Component {
 
   renderHorizontalLines = config => {
     const { count, width, height, paddingTop, paddingRight } = config;
-    const basePosition = height - height / 4;
-
-    return [...new Array(count + 1)].map((_, i) => {
-      const y = (basePosition / count) * i + paddingTop;
+    return [...new Array(count)].map((_, i) => {
       return (
         <Line
           key={Math.random()}
           x1={paddingRight}
-          y1={y}
+          y1={(height / 4) * i + paddingTop}
           x2={width}
-          y2={y}
+          y2={(height / 4) * i + paddingTop}
           {...this.getPropsForBackgroundLines()}
         />
       );
@@ -103,17 +100,17 @@ class AbstractChart extends Component {
       paddingTop,
       paddingRight,
       horizontalLabelRotation = 0,
-      decimalPlaces = 2,
       formatYLabel = yLabel => yLabel
     } = config;
     const {
       yAxisLabel = "",
       yAxisSuffix = "",
-      yLabelsOffset = 12
+      yLabelsOffset = 12,
+      chartConfig
     } = this.props;
-
-    return [...Array(count === 1 ? 1 : count + 1).keys()].map((i, _) => {
-      let yLabel = i * count;
+    const { decimalPlaces = 2 } = chartConfig;
+    return [...new Array(count)].map((_, i) => {
+      let yLabel;
 
       if (count === 1) {
         yLabel = `${yAxisLabel}${formatYLabel(
@@ -121,19 +118,18 @@ class AbstractChart extends Component {
         )}${yAxisSuffix}`;
       } else {
         const label = this.props.fromZero
-          ? (this.calcScaler(data) / count) * i + Math.min(...data, 0)
-          : (this.calcScaler(data) / count) * i + Math.min(...data);
+          ? (this.calcScaler(data) / (count - 1)) * i + Math.min(...data, 0)
+          : (this.calcScaler(data) / (count - 1)) * i + Math.min(...data);
         yLabel = `${yAxisLabel}${formatYLabel(
           label.toFixed(decimalPlaces)
         )}${yAxisSuffix}`;
       }
 
-      const basePosition = height - height / 4;
       const x = paddingRight - yLabelsOffset;
       const y =
         count === 1 && this.props.fromZero
           ? paddingTop + 4
-          : (height * 3) / 4 - (basePosition / count) * i + paddingTop;
+          : (height * 3) / 4 - ((height - paddingTop) / count) * i + 12;
       return (
         <Text
           rotation={horizontalLabelRotation}
@@ -172,12 +168,13 @@ class AbstractChart extends Component {
     if (stackedBar) {
       fac = 0.71;
     }
+    const volumeAdjustment = 12 <= labels.length ? 1 : 0
     return labels.map((label, i) => {
       if (hidePointsAtIndex.includes(i)) {
         return null;
       }
       const x =
-        (((width - paddingRight) / labels.length) * i +
+        (((width - paddingRight) / (labels.length + volumeAdjustment)) * i +
           paddingRight +
           horizontalOffset) *
         fac;
